@@ -1,14 +1,12 @@
-# 导入必要的库
 import pandas as pd
 import numpy as np
 from xgboost import XGBClassifier
 from sklearn.model_selection import StratifiedKFold, train_test_split
-from imblearn.pipeline import Pipeline  # 从 imblearn 而不是 sklearn 导入 Pipeline
+from imblearn.pipeline import Pipeline
 from sklearn.preprocessing import MinMaxScaler
-from sklearn.feature_selection import SelectKBest, chi2, mutual_info_classif, SelectFromModel
 from sklearn.feature_selection import SelectKBest, chi2
 from imblearn.over_sampling import SMOTE
-from sklearn.metrics import (make_scorer, matthews_corrcoef, confusion_matrix,
+from sklearn.metrics import (matthews_corrcoef, confusion_matrix,
                              recall_score, precision_score, accuracy_score,
                              f1_score, roc_auc_score, average_precision_score,
                              roc_curve, precision_recall_curve)
@@ -25,6 +23,7 @@ from torch.optim.lr_scheduler import ReduceLROnPlateau
 from tqdm import tqdm
 import os
 import warnings
+import joblib
 
 warnings.filterwarnings("ignore")
 
@@ -82,14 +81,11 @@ test_labels_xgb = np.concatenate([np.ones(positive_test_data_xgb.shape[0]),
 test_data_xgb = test_data_xgb.apply(pd.to_numeric, errors='coerce')
 test_data_xgb = test_data_xgb.fillna(test_data_xgb.mean())
 
-from sklearn.model_selection import train_test_split
-
 X_train_xgb, X_val_xgb, y_train_xgb, y_val_xgb = train_test_split(
     train_data_xgb, train_labels_xgb, test_size=0.2, random_state=SEED, stratify=train_labels_xgb)
 
 pipeline_xgb = Pipeline(steps=[
     ('scaler', MinMaxScaler()),
-    # ('featureSelection', SelectKBest(mutual_info_classif, k=1200)),
     ('featureSelection', SelectKBest(chi2, k=1200)),
     ('sampling', SMOTE(random_state=SEED)),
     ('classifier', XGBClassifier(
@@ -127,12 +123,12 @@ for fold, (train_idx, val_idx) in enumerate(cv_xgb.split(X_train_xgb, y_train_xg
     y_train_fold, y_val_fold = y_train_xgb[train_idx], y_train_xgb[val_idx]
 
     pipeline_xgb.fit(X_train_fold, y_train_fold)
-
     oof_preds_xgb_train[val_idx] = pipeline_xgb.predict_proba(X_val_fold)[:, 1]
 
 oof_preds_xgb_val = pipeline_xgb.predict_proba(X_val_xgb)[:, 1]
 test_preds_xgb = pipeline_xgb.predict_proba(test_data_xgb)[:, 1]
 
+joblib.dump(pipeline_xgb, "xgb_pipeline.pkl")
 
 # ============================
 # Part 2: DNN Training
@@ -174,10 +170,6 @@ X_train_nn, X_val_nn, y_train_nn, y_val_nn = train_test_split(
 
 class EmbeddingDataset(Dataset):
     def __init__(self, embeddings, labels):
-        """
-        embeddings: numpy array of fixed-length vectors, each of shape (embed_dim,)
-        labels: numpy array of labels
-        """
         self.embeddings = embeddings
         self.labels = labels.astype(np.float32)
 
@@ -238,8 +230,6 @@ class FocalLoss(nn.Module):
         self.reduction = reduction
 
     def forward(self, inputs, targets):
-        # inputs: [batch_size]
-        # targets: [batch_size]
         BCE_loss = nn.BCEWithLogitsLoss(reduction='none')(inputs, targets)
         pt = torch.where(targets == 1, torch.sigmoid(inputs), 1 - torch.sigmoid(inputs))
         F_loss = self.alpha * (1 - pt) ** self.gamma * BCE_loss
@@ -310,13 +300,15 @@ oof_preds_nn_train = np.zeros(len(X_train_nn))
 oof_preds_nn_val = np.zeros(len(X_val_nn))
 test_preds_nn = np.zeros(len(test_embeddings))
 
+best_global_mcc = -1
+best_global_model_state = None
+
 for fold, (train_idx, val_idx) in enumerate(skf_nn.split(X_train_nn, y_train_nn)):
     X_fold_train, X_fold_val = X_train_nn[train_idx], X_train_nn[val_idx]
     y_fold_train, y_fold_val = y_train_nn[train_idx], y_train_nn[val_idx]
 
     smote = SMOTE(random_state=SEED)
     X_fold_train_res, y_fold_train_res = smote.fit_resample(X_fold_train, y_fold_train)
-
 
     class_weights_values = class_weight.compute_class_weight(
         class_weight='balanced',
@@ -331,16 +323,11 @@ for fold, (train_idx, val_idx) in enumerate(skf_nn.split(X_train_nn, y_train_nn)
     train_loader = DataLoader(train_dataset, batch_size=64, shuffle=True)
     val_loader = DataLoader(val_dataset, batch_size=64, shuffle=False)
 
-    embed_dim = X_fold_train_res.shape[1]  # 从数据中获取嵌入维度
+    embed_dim = X_fold_train_res.shape[1]
     model = DeepFeedForwardClassifier(input_dim=embed_dim, hidden_dim=128, dropout=0.5).to(device)
 
-    # use BCEWithLogitsLoss
     criterion = get_criterion(class_weights, device, use_focal=False)
-    # or Focal Loss
-    # criterion = get_criterion(class_weights, device, use_focal=True)
-
-    optimizer = AdamW(model.parameters(), lr=1e-4, weight_decay=1e-5)  # 调整学习率和权重衰减
-
+    optimizer = AdamW(model.parameters(), lr=1e-4, weight_decay=1e-5)
     scheduler = ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=3, verbose=True, min_lr=1e-6)
 
     scaler = torch.cuda.amp.GradScaler()
@@ -349,7 +336,8 @@ for fold, (train_idx, val_idx) in enumerate(skf_nn.split(X_train_nn, y_train_nn)
     best_threshold = 0.5
     patience = 10
     trigger_times = 0
-    best_val_loss = float('inf')
+
+    best_fold_model_state = None
 
     for epoch in range(1, 51):
         print(f"Epoch {epoch}/50")
@@ -373,7 +361,7 @@ for fold, (train_idx, val_idx) in enumerate(skf_nn.split(X_train_nn, y_train_nn)
         if current_best_mcc > best_mcc:
             best_mcc = current_best_mcc
             best_threshold = current_best_threshold
-            torch.save(model.state_dict(), f"best_model_fold_{fold + 1}.pth")
+            best_fold_model_state = model.state_dict()
             trigger_times = 0
         else:
             trigger_times += 1
@@ -382,8 +370,14 @@ for fold, (train_idx, val_idx) in enumerate(skf_nn.split(X_train_nn, y_train_nn)
 
     oof_preds_nn_train[val_idx] = val_probs
 
+    if best_mcc > best_global_mcc:
+        best_global_mcc = best_mcc
+        best_global_model_state = best_fold_model_state
+
 val_dataset_nn = EmbeddingDataset(X_val_nn, y_val_nn)
 val_loader_nn = DataLoader(val_dataset_nn, batch_size=64, shuffle=False)
+model = DeepFeedForwardClassifier(input_dim=embed_dim, hidden_dim=128, dropout=0.5).to(device)
+model.load_state_dict(best_global_model_state)
 model.eval()
 with torch.no_grad():
     val_probs = []
@@ -404,17 +398,19 @@ with torch.no_grad():
         test_probs.extend(torch.sigmoid(outputs).cpu().numpy())
 test_preds_nn = np.array(test_probs)
 
+torch.save(best_global_model_state, "best_model.pth")
 
 # ============================
 # Part 3: Stacking
 # ============================
 X_stack_train = np.vstack((oof_preds_xgb_train, oof_preds_nn_train)).T
 X_stack_val = np.vstack((oof_preds_xgb_val, oof_preds_nn_val)).T
-
 X_stack_test = np.vstack((test_preds_xgb, test_preds_nn)).T
 
 meta_model = LogisticRegression(random_state=SEED, max_iter=1000)
 meta_model.fit(X_stack_train, y_train_xgb)
+
+joblib.dump(meta_model, "meta_model.pkl")
 
 meta_val_preds = meta_model.predict(X_stack_val)
 meta_val_probs = meta_model.predict_proba(X_stack_val)[:, 1]
@@ -489,9 +485,6 @@ plt.legend()
 plt.savefig('independent_prc.png')
 plt.show()
 
-f1_scores = 2 * (precision_vals * recall_vals) / (precision_vals + recall_vals + 1e-8)
-best_idx = np.argmax(f1_scores)
-# best_threshold = thresholds_pr[best_idx]
 best_threshold = 0.3
 
 meta_test_preds_best = (meta_test_probs >= best_threshold).astype(int)
@@ -523,4 +516,3 @@ disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=['Negative', '
 disp.plot(cmap=plt.cm.Blues)
 plt.title('Confusion Matrix')
 plt.show()
-

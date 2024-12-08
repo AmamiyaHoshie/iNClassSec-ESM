@@ -35,11 +35,11 @@ method, show great potential for the application in broader protein-related clas
 - **PSSM Matrices**: Corresponding Position-Specific Scoring Matrices (PSSM) calculated for each segmented protein sequence.
 
 ## Usage
-**Train the Model** `train.py`
+- **Train the Model** `train.py`
 
 This script performs hyperparameter tuning and model training on your dataset using 5-fold cross-validation. The trained model parameters are saved to a file, which can then be used for making predictions.
 
-**Make Predictions** `prediction.py`
+- **Make Predictions** `prediction.py`
 
 This script loads the trained model and makes predictions on a new dataset.
 

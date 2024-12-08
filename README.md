@@ -1,4 +1,4 @@
-# iNClassSec-ESM:: Non-Classical secreted protein predictor based on multimodal protein language model
+# iNClassSec-ESM: Non-Classical secreted protein predictor based on multimodal protein language model
 ## Introduction
 Non-classical secreted proteins (NCSPs) are a class of proteins lacking signal peptides, secreted
 by Gram-positive bacteria through non-classical secretion pathways. With the increasing demand
@@ -16,7 +16,7 @@ Deep Neural Network (DNN) trained on hidden layer embeddings from the protein la
 explored in terms of protein representation. In this study, we extracted hidden layer embeddings from
 ESM3 as inputs for multiple classifiers and deep learning networks, and compared them with existing
 PLMs. 
-
+<div align=center><img  src ="https://github.com/AmamiyaHoshie/img-repo/blob/main/iNCS-ESM.png" alt="Framework of iNClassSec-ESM"></div>
 Benchmark experiments indicate that iNClassSec-ESM outperforms most of existing methods
 across multiple performance metrics and could serve as an effective tool for discovering potential
 NCSPs. Additionally, the ESM3 hidden layer embeddings, as an innovative protein representation

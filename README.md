@@ -25,3 +25,12 @@ method, show great potential for the application in broader protein-related clas
 ## Dependencies
 - **Python Version:** `3.10`
 - **Required Packages:** See [`requirements.txt`](./requirements.txt) for a complete list of dependencies.
+
+## Dataset
+
+- `dataset/` directory contains data compiled from previous experimental summaries. This includes various protein sequences and related experimental results that serve as the foundation for our analysis.
+
+- `result/` directory holds the processed data generated using the POSSUM software. Specifically, it includes:
+
+- **Segmented Protein Sequences**: Individual protein sequences that have been partitioned by the POSSUM tool for detailed analysis.
+- **PSSM Matrices**: Corresponding Position-Specific Scoring Matrices (PSSM) calculated for each segmented protein sequence.

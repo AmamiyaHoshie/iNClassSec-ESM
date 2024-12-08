@@ -21,3 +21,7 @@ Benchmark experiments indicate that iNClassSec-ESM outperforms most of existing 
 across multiple performance metrics and could serve as an effective tool for discovering potential
 NCSPs. Additionally, the ESM3 hidden layer embeddings, as an innovative protein representation
 method, show great potential for the application in broader protein-related classification tasks.
+
+## Dependencies
+- **Python Version:** `3.10`
+- **Required Packages:** See [`requirements.txt`](./requirements.txt) for a complete list of dependencies.

@@ -7,7 +7,7 @@ attention due to their advantages over classical secretion pathways (Sec/Tat). H
 mechanisms of non-classical secretion pathways are not yet clear, identifying NCSPs through biolog-
 ical experiments is expensive and time-consuming, making it imperative to develop computational
 methods to address this issue. Existing NCSP prediction methods mainly use traditional handcrafted
-feature extraction to represent proteins from sequence information, which limits the models’ ability to
+featurs to represent proteins from sequence information, which limits the models’ ability to
 capture complex protein characteristics. In this study, we propose a novel NCSP predictor, iNClassSec-
 ESM, which combines deep learning with traditional classifiers to enhance prediction performance.
 iNClassSec-ESM integrates an XGBoost model trained on comprehensive handcrafted features and a

@@ -454,16 +454,6 @@ f1 = f1_score(test_labels_xgb, meta_test_preds, zero_division=0)
 roc_auc = roc_auc_score(test_labels_xgb, meta_test_probs)
 average_precision = average_precision_score(test_labels_xgb, meta_test_probs)
 mcc = matthews_corrcoef(test_labels_xgb, meta_test_preds)
-
-print(f"Accuracy: {accuracy:.4f}")
-print(f"Precision: {precision:.4f}")
-print(f"Recall: {recall:.4f}")
-print(f"Specificity: {specificity:.4f}")
-print(f"F1-score: {f1:.4f}")
-print(f"AUROC: {roc_auc:.4f}")
-print(f"AUPRC: {average_precision:.4f}")
-print(f"MCC: {mcc:.4f}")
-
 fpr, tpr, thresholds_roc = roc_curve(test_labels_xgb, meta_test_probs)
 plt.figure(figsize=(8, 6))
 plt.plot(fpr, tpr, label=f'AUROC = {roc_auc:.4f}')
@@ -480,13 +470,12 @@ plt.figure(figsize=(8, 6))
 plt.plot(recall_vals, precision_vals, label=f'AUPRC = {average_precision:.4f}')
 plt.xlabel('Recall')
 plt.ylabel('Precision')
-plt.title('Precision-Recall curve on the independent test')
+plt.title('PR curve on the independent test')
 plt.legend()
 plt.savefig('independent_prc.png')
 plt.show()
 
-best_threshold = 0.3
-
+best_threshold = 0.15
 meta_test_preds_best = (meta_test_probs >= best_threshold).astype(int)
 
 accuracy_best = accuracy_score(test_labels_xgb, meta_test_preds_best)

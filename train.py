@@ -415,29 +415,6 @@ joblib.dump(meta_model, "meta_model.pkl")
 meta_val_preds = meta_model.predict(X_stack_val)
 meta_val_probs = meta_model.predict_proba(X_stack_val)[:, 1]
 
-print("\nValidation set performance of stacking model:")
-accuracy_val = accuracy_score(y_val_xgb, meta_val_preds)
-precision_val = precision_score(y_val_xgb, meta_val_preds, zero_division=0)
-recall_val = recall_score(y_val_xgb, meta_val_preds, zero_division=0)
-try:
-    tn, fp, fn, tp = confusion_matrix(y_val_xgb, meta_val_preds).ravel()
-    specificity_val = tn / (tn + fp) if (tn + fp) > 0 else 0
-except ValueError:
-    specificity_val = 0
-f1_val = f1_score(y_val_xgb, meta_val_preds, zero_division=0)
-roc_auc_val = roc_auc_score(y_val_xgb, meta_val_probs)
-average_precision_val = average_precision_score(y_val_xgb, meta_val_probs)
-mcc_val = matthews_corrcoef(y_val_xgb, meta_val_preds)
-
-print(f"Accuracy: {accuracy_val:.4f}")
-print(f"Precision: {precision_val:.4f}")
-print(f"Recall: {recall_val:.4f}")
-print(f"Specificity: {specificity_val:.4f}")
-print(f"F1-score: {f1_val:.4f}")
-print(f"AUROC: {roc_auc_val:.4f}")
-print(f"AUPRC: {average_precision_val:.4f}")
-print(f"MCC: {mcc_val:.4f}")
-
 meta_test_preds = meta_model.predict(X_stack_test)
 meta_test_probs = meta_model.predict_proba(X_stack_test)[:, 1]
 

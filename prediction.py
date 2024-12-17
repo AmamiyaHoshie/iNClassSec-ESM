@@ -148,7 +148,7 @@ meta_test_probs = meta_model.predict_proba(X_stack_test)[:, 1]
 # ============================
 # Part 4: Evaluate & Save Results
 # ============================
-best_threshold = 0.3
+best_threshold = 0.15
 meta_test_preds_best = (meta_test_probs >= best_threshold).astype(int)
 
 accuracy_best = accuracy_score(test_labels_xgb, meta_test_preds_best)

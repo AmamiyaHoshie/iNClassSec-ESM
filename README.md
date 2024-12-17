@@ -35,6 +35,10 @@ method, show great potential for the application in broader protein-related clas
 - **PSSM Matrices**: Corresponding Position-Specific Scoring Matrices (PSSM) calculated for each segmented protein sequence.
 
 ## Usage
+- **Evaluation the Model** `stack_5cv.py`
+
+Run this script to produce final ensemble model performance based on the 5-fold cross-validation and plot the ROC curve.
+
 - **Train the Model** `train.py`
 
 This script performs hyperparameter tuning and model training on your dataset using 5-fold cross-validation. The trained model parameters are saved to a file, which can then be used for making predictions.

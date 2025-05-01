@@ -30,3 +30,18 @@ This script performs hyperparameter tuning and model training on your dataset us
 This script loads the trained model and makes predictions on a new dataset.
 
 **Please ensure that the feature descriptors for the sequences to be predicted are correctly generated and saved in the `feature/` directory.
+
+---
+
+>If this work has positively contributed to your research, please cite:
+
+```bibtex
+@article{shao2025inclasssec,
+  title={iNClassSec-ESM: Discovering potential non-classical secreted proteins through a novel protein language model},
+  author={Shao, Yizhou and Liu, Taigang},
+  journal={Computational and Structural Biotechnology Journal},
+  volume={27},
+  pages={1350--1358},
+  year={2025},
+  publisher={Elsevier}
+}
